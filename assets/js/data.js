@@ -10,8 +10,8 @@ window.MB = window.MB || {};
 
 /* ------------------------------------------------------------
    FOTOGRAFIAS E FILMES
-   As suítes ainda estão sem fotos: o site mostra "Fotos em breve".
-   Quando o material chegar, ele vai em assets/media/<id-da-suíte>/:
+   As fotos de cada suíte ficam em assets/media/<id-da-suíte>/
+   (uma suíte sem fotos mostra "Fotos em breve"):
      01.webp, 02.webp …   fotos (1200 px de largura) — a 01 é a capa
      01-sm.webp …         as mesmas fotos em 600 px, para miniaturas
      filme.mp4            vídeo da suíte · filme.webp = capa do vídeo
@@ -96,7 +96,7 @@ MB.categories = {
     tones: ["#0a1030", "#1d2a72", "#5a6fd0"]
   },
   superluxo: {
-    id: "superluxo", label: "Super Luxo", title: "Suítes Super Luxo", count: 6,
+    id: "superluxo", label: "Super Luxo", title: "Suítes Super Luxo", count: 7,
     tagline: "Sinta-se realizado: suítes que despertam no casal a criatividade no prazer, com banheira de hidromassagem.",
     amenities: ["TV de LCD", "Banheira de hidromassagem", "Chuveiro privativo", "Ar-condicionado", "Sistema de som", "Frigobar", "Mesa com cadeiras", "Garagem privativa"],
     prices: { twoHours: 98, threeHours: 108, overnight: 170 },
@@ -112,14 +112,15 @@ MB.categories = {
 };
 
 /* ------------------------------------------------------------
-   SUÍTES — na ordem das categorias
+   SUÍTES — na ordem das categorias e, dentro de cada uma, pelo número da suíte
    mbSuite(número, id, nome, categoria, descrição, tons, legendas, filme)
-   número  = número da suíte, quando o motel informar (null: o site não mostra)
+   número  = número da suíte no motel, entre aspas ("01" … "23"), o mesmo das pastas
+             de fotos enviadas pelo motel (null: o site não mostra número)
    legendas = as legendas das fotos, na ordem dos arquivos 01.webp, 02.webp …
               da pasta assets/media/<id>/ (a 01 é a capa). null enquanto a suíte
               não tiver fotos: o site mostra "Fotos em breve".
    filme   = false para a suíte com fotos mas sem vídeo.
-   Ex.: mbSuite(null,"inglesa","Inglesa","presidencial","…", null, ["Cama","Hidromassagem"])
+   Ex.: mbSuite("23","inglesa","Inglesa","presidencial","…", null, ["Cama","Hidromassagem"], false)
 ------------------------------------------------------------ */
 function mbSuite(number, id, name, category, description, tones, shots, film){
   const cat = MB.categories[category];
@@ -138,27 +139,48 @@ function mbSuite(number, id, name, category, description, tones, shots, film){
 }
 
 MB.suites = [
-  /* Presidenciais */
-  mbSuite(null,"inglesa","Inglesa","presidencial","A elegância britânica na categoria mais completa da casa: teto solar exclusivo, sauna, banheira de hidromassagem, mini-boate e garagem para dois carros.",["#0a1236","#1b2f86","#3a5ad0"],null),
-  mbSuite(null,"africana","Africana","presidencial","O calor da África numa suíte Presidencial, com teto solar exclusivo, sauna, banheira de hidromassagem, mini-boate e cadeira erótica.",["#0b1430","#22306e","#4a5fae"],null),
-  /* VIP */
-  mbSuite(null,"art-deco","Art Déco","vip","O glamour geométrico dos anos 1920 com a estrutura VIP completa: sauna, mini-boate, banheira de hidromassagem e duas TVs de LCD.",["#0a1030","#1d2a72","#5a6fd0"],null),
-  mbSuite(null,"baiana","Baiana","vip","A alegria da Bahia numa suíte VIP com sauna, mini-boate, banheira de hidromassagem e chuveiro privativo.",["#081a33","#14407a","#2f74c0"],null),
-  mbSuite(null,"nautica","Náutica","vip","Clima de alto-mar e a estrutura VIP completa: sauna, mini-boate, banheira de hidromassagem e duas TVs de LCD.",["#06182e","#0f3a6e","#2d6ab4"],null),
-  mbSuite(null,"grega","Grega","vip","Inspiração mediterrânea para uma noite de deuses, com sauna, mini-boate e banheira de hidromassagem.",["#0a1636","#1a3b8a","#4f7de0"],null),
-  mbSuite(null,"marroquina","Marroquina","vip","A inspiração do Marrocos com a praticidade VIP: sauna, mini-boate, banheira de hidromassagem e garagem privativa.",["#0d1234","#28307e","#5660c2"],null),
-  mbSuite(null,"chinesa","Chinesa","vip","A inspiração do Oriente com a estrutura VIP completa: sauna, mini-boate, banheira de hidromassagem e duas TVs de LCD.",["#0a0f2e","#1c2470","#3e4cc4"],null),
-  mbSuite(null,"gls","GLS","vip","Livre para todos os amores, com sauna, mini-boate, banheira de hidromassagem e chuveiro privativo.",["#0c1034","#2a2a86","#6a5ad8"],null),
-  mbSuite(null,"egipcia","Egípcia","vip","O mistério dos faraós com sauna, mini-boate, banheira de hidromassagem e duas TVs de LCD.",["#0a1430","#1c3478","#3d64bc"],null),
-  /* Super Luxo */
-  mbSuite(null,"romana","Romana","superluxo","A Roma antiga em versão íntima: banheira de hidromassagem, chuveiro privativo e garagem privativa.",["#0a1434","#1e3684","#4468d4"],null),
-  mbSuite(null,"anos-dourados","Anos Dourados","superluxo","A nostalgia das décadas de ouro com o conforto Super Luxo e banheira de hidromassagem.",["#0b1232","#232f7a","#4b5bc6"],null),
-  mbSuite(null,"japonesa","Japonesa","superluxo","A calma do Japão com banheira de hidromassagem, TV de LCD e garagem privativa.",["#081530","#163a7c","#3368c8"],null),
-  mbSuite(null,"country","Country","superluxo","O aconchego do campo com a estrutura Super Luxo: banheira de hidromassagem, som e garagem privativa.",["#0b1430","#1d3370","#41609e"],null),
-  mbSuite(null,"arabe","Árabe","superluxo","Uma noite das mil e uma noites, com banheira de hidromassagem e chuveiro privativo.",["#0c1032","#25297a","#5257c0"],null),
-  mbSuite(null,"tropical","Tropical","superluxo","Clima de verão o ano inteiro, com banheira de hidromassagem e garagem privativa.",["#061a30","#0f4478","#2b7cc0"],null),
-  /* Luxo */
-  mbSuite(null,"luxo","Luxo","luxo","As suítes Luxo despertam no casal a criatividade no prazer: ar-condicionado, TV, sistema de som, frigobar e mesa com cadeiras.",["#0a1232","#1a2e78","#3a58c0"],null)
+  /* Presidenciais — suítes 22 e 23 */
+  mbSuite("22","africana","Africana","presidencial","O calor da África numa suíte Presidencial, com teto solar exclusivo, sauna, banheira de hidromassagem, mini-boate e cadeira erótica.",["#0b1430","#22306e","#4a5fae"],
+    ["Cama e parede de bambu","Cama com estampa de zebra","Ambiente principal","Hidromassagem a céu aberto","Hidro e cadeira erótica","Deque a céu aberto","Cadeira erótica","TV e frigobar"], false),
+  mbSuite("23","inglesa","Inglesa","presidencial","A elegância britânica na categoria mais completa da casa: teto solar exclusivo, sauna, banheira de hidromassagem, mini-boate e garagem para dois carros.",["#0a1236","#1b2f86","#3a5ad0"],
+    ["Ambiente principal","Cama e espelho no teto","Cabeceira capitonê","Mesa e lustre","Vista para a área externa","Hidromassagem a céu aberto","Deque da hidromassagem","Área externa a céu aberto","Cadeira erótica","Detalhe da cadeira erótica","Ducha e TV","Box de vidro"], false),
+  /* VIP — suítes 14 a 21 */
+  mbSuite("14","grega","Grega","vip","Inspiração mediterrânea para uma noite de deuses, com sauna, mini-boate e banheira de hidromassagem.",["#0a1636","#1a3b8a","#4f7de0"],
+    ["Cama e painel da Acrópole","Ambiente principal","Cama e colunas","Detalhe do painel","Cama, mesa e hidro","Banheira de hidromassagem","Mesa ao lado da hidro","Hidro e frigobar","Mesa e TV"], false),
+  mbSuite("15","egipcia","Egípcia","vip","O mistério dos faraós com sauna, mini-boate, banheira de hidromassagem e duas TVs de LCD.",["#0a1430","#1c3478","#3d64bc"],
+    ["Cama entre obeliscos","Ambiente principal","Cama e obeliscos","Detalhe da cabeceira","Frigobar da Esfinge","Banheira de hidromassagem","TV e mesa"], false),
+  mbSuite("16","art-deco","Art Déco","vip","O glamour geométrico dos anos 1920 com a estrutura VIP completa: sauna, mini-boate, banheira de hidromassagem e duas TVs de LCD.",["#0a1030","#1d2a72","#5a6fd0"],
+    ["Cama e espelho escalonado","Ambiente principal","Cama e box decorado","TV e mesa","Banheira de hidromassagem","Mesa com cadeiras","Cardápio na suíte"], false),
+  mbSuite("17","baiana","Baiana","vip","A alegria da Bahia numa suíte VIP com sauna, mini-boate, banheira de hidromassagem e chuveiro privativo.",["#081a33","#14407a","#2f74c0"],
+    ["Cama e painel do Pelourinho","Ambiente principal","Mesa e deque da hidro","Banheira de hidromassagem","Luminária e deque","TV e ambiente"], false),
+  mbSuite("18","nautica","Náutica","vip","Clima de alto-mar e a estrutura VIP completa: sauna, mini-boate, banheira de hidromassagem e duas TVs de LCD.",["#06182e","#0f3a6e","#2d6ab4"],
+    ["Cama redonda no convés","Ambiente principal","Banheira de hidromassagem","Hidro e escotilhas","TV e painel do navio","Frigobar"], false),
+  mbSuite("19","gls","GLS","vip","Livre para todos os amores, com sauna, mini-boate, banheira de hidromassagem e chuveiro privativo.",["#0c1034","#2a2a86","#6a5ad8"],
+    ["Cama com cabeceira de lábios","Arco-íris e TV","Cama e espelho","Frigobar arco-íris","Banheira de hidromassagem","Hidro e ducha"], false),
+  mbSuite("20","chinesa","Chinesa","vip","A inspiração do Oriente com a estrutura VIP completa: sauna, mini-boate, banheira de hidromassagem e duas TVs de LCD.",["#0a0f2e","#1c2470","#3e4cc4"],
+    ["Cama e cabeceira vermelha","Cama e frigobar","Mesa e TV","Banheira de hidromassagem","Gradil dourado e hidro","Hidro e ducha"], false),
+  mbSuite("21","marroquina","Marroquina","vip","A inspiração do Marrocos com a praticidade VIP: sauna, mini-boate, banheira de hidromassagem e garagem privativa.",["#0d1234","#28307e","#5660c2"],
+    ["Cama e teto rendilhado","Detalhe da cama","TV e mesa","Banheira de hidromassagem","Detalhe da hidro"], false),
+  /* Super Luxo — suítes 01 a 07 */
+  mbSuite("01","arabe","Árabe","superluxo","Uma noite das mil e uma noites, com banheira de hidromassagem e chuveiro privativo.",["#0c1032","#25297a","#5257c0"],
+    ["Cama sob a tenda","A tenda e o ambiente","Cama e espelhos","Cortinas e dossel","Banheira de hidromassagem","Bancada e espelho em arco","Mesa e frigobar","Cardápio na suíte"], false),
+  mbSuite("02","romana","Romana","superluxo","A Roma antiga em versão íntima: banheira de hidromassagem, chuveiro privativo e garagem privativa.",["#0a1434","#1e3684","#4468d4"],
+    ["Cama e colunas","Vista pelo arco","Ambiente principal","TV e treliças","Banheira de hidromassagem","Hidromassagem em mármore","Mesa e frigobar","Frigobar"], false),
+  mbSuite("03","country","Country","superluxo","O aconchego do campo com a estrutura Super Luxo: banheira de hidromassagem, som e garagem privativa.",["#0b1430","#1d3370","#41609e"],
+    ["Cama e painel do campo","Ambiente principal","Detalhe da decoração","Banheira de hidromassagem","Frigobar e painel","Mesa, TV e lustre","Mesa com cadeiras","Cardápio na suíte"], false),
+  mbSuite("04","japonesa","Japonesa","superluxo","A calma do Japão com banheira de hidromassagem, TV de LCD e garagem privativa.",["#081530","#163a7c","#3368c8"],
+    ["Ambiente principal","Painel de cerejeiras","Cama e painéis de luz","Cama com vista para a hidro","Banheira de hidromassagem","Ducha","TV e frigobar","Parede de madeira e TV","Lavabo"], false),
+  mbSuite("05","rock","Rock","superluxo","O palco é de vocês: cama redonda, painel de show ao vivo e banheira de hidromassagem, no clima do rock.",["#0a1030","#1f2a70","#4a5ac0"],
+    ["Cama redonda","Ambiente principal","Painel do rock e mesa","TV e frigobar","Banheira de hidromassagem"], false),
+  mbSuite("06","tropical","Tropical","superluxo","Clima de verão o ano inteiro, com banheira de hidromassagem e garagem privativa.",["#061a30","#0f4478","#2b7cc0"],
+    ["Cama redonda e painel da praia","Cama redonda","Painel da praia","Banheira de hidromassagem","Mesa e ambiente","Jardim vertical","TV e frigobar","Detalhe da cama"], false),
+  mbSuite("07","anos-dourados","Anos Dourados","superluxo","A nostalgia das décadas de ouro com o conforto Super Luxo e banheira de hidromassagem.",["#0b1232","#232f7a","#4b5bc6"],
+    ["Ambiente principal","Cama redonda e espelho no teto","Cama e parede de bolas","Mesa e sofá","Sofá e TV","Frigobar Anos Dourados","Cama com vista para a hidro","Banheira de hidromassagem","Ducha e lavabo"], false),
+  /* Luxo — sem número informado (fotos das pastas "Suíte Padrão" e "Suíte De Motoqueiro") */
+  mbSuite(null,"luxo","Luxo","luxo","As suítes Luxo despertam no casal a criatividade no prazer: ar-condicionado, TV, sistema de som, frigobar e mesa com cadeiras.",["#0a1232","#1a2e78","#3a58c0"],
+    ["Cama","Ambiente principal","Pole dance e TV","Frigobar","Mesa com cadeiras","TV","Poltrona erótica"], false),
+  mbSuite(null,"motoqueiro","Motoqueiro","luxo","Prática e direta, para quem chega de moto: ar-condicionado, TV, frigobar e mesa com cadeiras.",["#0a1232","#1c3070","#3e5cb8"],
+    ["Cama e espelho no teto","Mesa, TV e ar-condicionado","Frigobar"], false)
 ];
 
 /* Suítes exibidas em destaque na Home (a primeira ocupa o quadro maior) */

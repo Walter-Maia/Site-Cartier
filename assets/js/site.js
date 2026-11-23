@@ -19,6 +19,8 @@ const finePointer    = window.matchMedia("(pointer: fine)");
 const wideScreen     = window.matchMedia("(min-width: 1024px)");
 const fmtBRL = v => v==null ? null : "R$ " + v.toFixed(2).replace(".",",");
 const pad2   = n => String(n).padStart(2,"0");
+/* nos textos que vêm do data.js, o telefone não se parte em duas linhas: os espaços dele viram espaços não separáveis */
+const keepPhone = t => motelConfig.phone ? t.split(motelConfig.phone).join(motelConfig.phone.replace(/ /g, "\u00A0")) : t;
 const wait   = ms => new Promise(r => setTimeout(r, ms));
 /* o menor período com preço: "2 horas a partir de R$ 82,00" */
 const firstPeriod = p => periods.find(o => p[o.key] != null) || periods[0];
@@ -36,6 +38,25 @@ function showcase(){
   return withPhoto.length ? withPhoto : suites.slice();
 }
 
+/* Quanto cada quadro de foto ocupa na tela, em pixels do aparelho: a largura que o site.css dá ao quadro × a densidade
+   da tela. Com esse número MB.img entrega a versão de 600 px sempre que ela basta (até 640) e a de 1200 px só onde ela
+   aparece de fato. Ao mudar a largura de um desses quadros no CSS, acompanhe aqui. */
+const dpr = Math.min(window.devicePixelRatio || 1, 3);
+const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+const padX = w => w <= 380 ? 16 : Math.min(72, Math.max(20, w * .05));   /* --pad */
+const shownW = {
+  /* .hero-stack (baralho da Home) */
+  plate: () => { const w = window.innerWidth; return dpr * (w <= 560 ? Math.min(w * .56, 250) : w <= 1024 ? Math.min(w * .5, 310) : 420); },
+  /* .tile na .featured-grid: a grande ocupa 7 de 12 colunas (a linha inteira até 1024); as pequenas, 5 (6 até 1024; a linha inteira até 768) */
+  tile: big => { const w = window.innerWidth; return dpr * (w <= 768 || (big && w <= 1024) ? w : Math.min(w, 85 * remPx()) * (big ? 7 : w <= 1024 ? 6 : 5) / 12); },
+  /* .detail-cover (capa da suíte) */
+  cover: () => { const w = window.innerWidth; return dpr * (w <= 768 ? w : Math.min(w <= 1024 ? w : w * .38, 30 * remPx())); },
+  /* .gal-stage (foto grande da galeria), com os 7% de zoom da foto que respira */
+  stage: () => dpr * Math.min(window.innerHeight * .76, 780) * .75 * 1.07,
+  /* .gal-deck (baralho de fotos, no celular), idem */
+  deck: () => { const w = window.innerWidth; return dpr * Math.min(w - 2 * padX(w) - 76, window.innerHeight * .56 * .75, 25 * remPx()) * 1.07; }
+};
+
 const PENDING = "Fotos em breve";
 /* Quadro de mídia: fundo no tom da suíte. Sem fotografia, fica o nome com a legenda "Fotos em breve" */
 function makePH(name, tones, label, opts={}){
@@ -48,12 +69,14 @@ function makePH(name, tones, label, opts={}){
   el.innerHTML = `<span class="ph-name" aria-hidden="true">${name}</span><span class="ph-wait" aria-hidden="true">${PENDING}</span>`;
   return el;
 }
-/* Imagem com fade-in; se falhar, some e o quadro volta a mostrar "Fotos em breve" */
-function makeImg(src, alt, w, eager){
+/* Imagem com fade-in; se falhar, some e o quadro volta a mostrar "Fotos em breve".
+   prio: a foto principal da página (capa da suíte, carta da frente do baralho) passa na frente das outras na fila do navegador */
+function makeImg(src, alt, w, eager, prio){
   const img = document.createElement("img");
-  img.src = MB.img(src, w); img.alt = alt;
   if(!eager) img.loading = "lazy";
+  if(prio) img.fetchPriority = "high";
   img.decoding = "async";
+  img.src = MB.img(src, w); img.alt = alt;
   const ready = () => img.classList.add("loaded");
   img.onload = ready;
   img.onerror = () => { img.parentElement?.classList.remove("has-img"); img.remove(); };
@@ -66,7 +89,7 @@ function media(container, src, name, tones, label, opts={}){
   const ph = makePH(name, tones, label, opts);
   if(src){
     ph.removeAttribute("role"); ph.removeAttribute("aria-label");
-    ph.appendChild(makeImg(src, `${name} — ${label || "ambiente"}`, opts.w, opts.eager));
+    ph.appendChild(makeImg(src, `${name} — ${label || "ambiente"}`, opts.w, opts.eager, opts.prio));
     ph.classList.add("has-img");
   }
   container.appendChild(ph);
@@ -162,6 +185,7 @@ function handleRoute(){
       if(query.cat) scrollToTarget("suiteIndexSection");
     }
     if(page === "cardapio") requestAnimationFrame(fitBookPages);   /* só dá para medir as páginas com a área visível */
+    if(page === "contato") loadMap();
     if(query.to) scrollToTarget(query.to);
     if(query.open === "availability") openAvailability();
   });
@@ -229,11 +253,13 @@ function initNavigation(){
    movimento", o baralho não se embaralha sozinho e a troca é imediata.
 ------------------------------------------------------------ */
 const DECK_SIZE = 4, DECK_EVERY = 3600, DECK_HOLD = 6500;
-function paintPlate(a, s){
-  const from = `${fromLabel(s.prices)} a partir de ${fmtBRL(fromPrice(s.prices))}`;
+/* As cartas só são pedidas na hora quando a Home é a página aberta. Entrando por outra rota (#/suites, uma suíte…) elas
+   ficam para quando a Home aparecer: antes, toda página baixava quatro fotos grandes que não mostrava. */
+function paintPlate(a, s, front){
+  const from = `${fromLabel(s.prices)} a partir de ${fmtBRL(fromPrice(s.prices))}`, home = parseRoute().page === "home";
   a.href = `#/suites/${s.id}`;
   a.setAttribute("aria-label", `${suiteTitle(s)} (${s.categoryLabel}): ${from}`);
-  media(a.querySelector(".plate-media"), s.images[0], s.name, s.tones, s.views[0], { quiet:true, w:900, eager:true });
+  media(a.querySelector(".plate-media"), s.images[0], s.name, s.tones, s.views[0], { quiet:true, w:shownW.plate(), eager:home, prio:home && front });
   a.querySelector(".plate-meta").innerHTML = `
     <small>${suiteKicker(s)}</small>
     <b>${s.name}</b>
@@ -252,7 +278,7 @@ function renderHeroStack(){
     const a = document.createElement("a");
     a.className = "plate";
     a.innerHTML = `<span class="plate-media"></span><span class="plate-meta"></span>`;
-    paintPlate(a, draw());
+    paintPlate(a, draw(), k === 0);
     stack.appendChild(a);
     deck.push(a);
   }
@@ -422,7 +448,7 @@ function renderFeatured(){
     a.dataset.cursor = "Ver suíte";
     a.innerHTML = `<div class="tile-media"></div><div class="tile-caption"></div>`;
     paintTileCaption(a, s);
-    media(a.querySelector(".tile-media"), s.images[0], s.name, s.tones, s.views[0], { quiet:true, w:1200 });
+    media(a.querySelector(".tile-media"), s.images[0], s.name, s.tones, s.views[0], { quiet:true, w:shownW.tile(i === 0) });
     a._suite = s;
     grid.appendChild(a);
     return a;
@@ -440,7 +466,7 @@ function renderFeatured(){
     a._suite = next;
     a._busy = true;
     const box = a.querySelector(".tile-media"), tmp = document.createElement("div");
-    const ph = media(tmp, next.images[0], next.name, next.tones, next.views[0], { quiet:true, w:1200, eager:true });
+    const ph = media(tmp, next.images[0], next.name, next.tones, next.views[0], { quiet:true, w:shownW.tile(a === tiles[0]), eager:true });
     const img = ph.querySelector("img");
     const ready = img && img.decode ? Promise.race([img.decode().catch(() => {}), wait(700)]) : Promise.resolve();
     ready.then(() => {
@@ -468,7 +494,7 @@ function faqItemHTML(f){
   else if(f.link?.href) link = `<a class="link-arrow" href="${f.link.href}">${f.link.label} <span class="arrow">→</span></a>`;
   return `<details class="faq-item" id="faq-${f.id}">
     <summary>${f.q}<i aria-hidden="true">+</i></summary>
-    <div class="faq-body"><p>${f.a}</p>${link}</div>
+    <div class="faq-body"><p>${keepPhone(f.a)}</p>${link}</div>
   </details>`;
 }
 function renderFAQ(){
@@ -515,13 +541,15 @@ function renderCategoryColumns(){
 let currentFilter = "all";
 function renderSuiteIndex(){
   const list = $("#suiteIndex");
+  /* com suítes numeradas pelo motel, a que não tem número leva um traço (a posição na lista se confundiria com um número de suíte) */
+  const numbered = suites.some(s => s.number);
   suites.forEach((s, i) => {
     const li = document.createElement("li");
     li.className = "sx-row";
     li.dataset.category = s.category;
     li.innerHTML = `
       <a href="#/suites/${s.id}" data-cursor="Ver suíte" aria-label="${suiteTitle(s)}, ${s.categoryLabel}${s.images.length ? "" : ", " + PENDING.toLowerCase()}">
-        <span class="sx-num">${s.number ?? pad2(i + 1)}</span>
+        <span class="sx-num">${s.number ?? (numbered ? "—" : pad2(i + 1))}</span>
         <span class="sx-thumb"></span>
         <span class="sx-name">${s.name}<small>${s.categoryLabel}${s.images.length ? "" : `<i>${PENDING}</i>`}</small></span>
         <span class="sx-desc">${s.description}</span>
@@ -531,6 +559,13 @@ function renderSuiteIndex(){
     media(li.querySelector(".sx-thumb"), s.images[0], s.name, s.tones, s.views[0], { quiet:true, w:320 });
     bindFilmPreview(li.firstElementChild, s);
     list.appendChild(li);
+  });
+  /* cada aba do filtro mostra quantas suítes ela lista (contado dos dados, não escrito à mão) */
+  $$(".filter-btn").forEach(b => {
+    const f = b.dataset.filter, n = f === "all" ? suites.length : suites.filter(s => s.category === f).length;
+    b.querySelector("i")?.remove();
+    b.insertAdjacentHTML("beforeend", ` <i>${n}</i>`);
+    b.setAttribute("aria-label", `${b.firstChild.textContent.trim()}: ${n} ${n === 1 ? "suíte" : "suítes"}`);
   });
   $$(".filter-btn").forEach(b => b.addEventListener("click", () => {
     setFilter(b.dataset.filter);
@@ -553,13 +588,17 @@ function renderPriceTable(){
   const cats = Object.values(categories);
   const rows = periods.map(o => [o.label, c => c.prices[o.key], o.note || ""]);
   if(lodgingInfo.extraHour != null) rows.push(["Hora adicional", () => lodgingInfo.extraHour, "em todas as suítes"]);
+  /* No celular o site.css mostra esta mesma tabela transposta (uma linha por categoria), mudando o display das
+     células; os papéis ARIA escritos aqui mantêm a leitura como tabela para leitores de tela nos dois desenhos. */
+  $("#priceTable").setAttribute("role", "table");
+  $("#priceTable").style.setProperty("--pt-rows", cats.length + 1);
   $("#priceTable").innerHTML = `
-    <thead><tr><th scope="col">Período</th>${cats.map(c => `<th scope="col" class="cat-th"><b>${c.label}</b>${c.count ? `${pad2(c.count)} ${c.count === 1 ? "suíte" : "suítes"}` : "Suítes"}</th>`).join("")}</tr></thead>
-    <tbody>${rows.map(([label, get, note]) => `
-      <tr><td>${label}${note ? `<small>${note}</small>` : ""}</td>${cats.map(c => {
+    <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Período</th>${cats.map(c => `<th scope="col" role="columnheader" class="cat-th"><b>${c.label}</b>${c.count ? `${pad2(c.count)} ${c.count === 1 ? "suíte" : "suítes"}` : "Suítes"}</th>`).join("")}</tr></thead>
+    <tbody role="rowgroup">${rows.map(([label, get, note]) => `
+      <tr role="row"><td role="rowheader">${label}${note ? `<small>${note}</small>` : ""}</td>${cats.map(c => {
         const v = get(c);
         /* o R$ fica no começo da coluna e o valor alinha pela direita (vírgulas uma embaixo da outra) */
-        return `<td>${v == null
+        return `<td role="cell">${v == null
           ? `<span class="pt-cur is-blank" aria-hidden="true">R$</span><span class="pt-val is-na"><i aria-hidden="true">—</i><span class="sr-only">não disponível</span></span>`
           : `<span class="pt-cur">R$</span><span class="pt-val">${v.toFixed(2).replace(".", ",")}</span>`}</td>`;
       }).join("")}</tr>`).join("")}
@@ -574,7 +613,7 @@ let detailSuite = null, galleryItems = [], galleryIndex = 0;
 function paintSuite(s){
   detailSuite = s;
   $("#detailHero").style.setProperty("--tone", s.tones[0]);
-  media($("#detailCover"), s.images[0], s.name, s.tones, s.views[0], { w:1200, eager:true });
+  media($("#detailCover"), s.images[0], s.name, s.tones, s.views[0], { w:shownW.cover(), eager:true, prio:true });
   $("#detailCat").textContent = suiteKicker(s);
   $("#detailName").textContent = s.name;
   $("#detailDesc").textContent = s.description;
@@ -682,8 +721,8 @@ function galShow(i, dir, how){
     glow.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1200, easing: "ease" }).onfinish = () => prev.forEach(g => g.remove());
   };
 
-  /* pré-carrega a próxima e a anterior */
-  [i + 1, i - 1].forEach(k => { const nx = galleryItems[(k + n) % n]; if(nx.type === "photo") new Image().src = nx.src; });
+  /* pré-carrega a próxima e a anterior, no mesmo tamanho em que vão aparecer (no celular o baralho já as tem: deckLoad) */
+  if(!galDeckMQ.matches) [i + 1, i - 1].forEach(k => { const nx = galleryItems[(k + n) % n]; if(nx.type === "photo") new Image().src = MB.img(nx.src, shownW.stage()); });
 }
 /* foto grande (tablet e computador) */
 function galStageShow(it, film, dir, my){
@@ -691,7 +730,7 @@ function galStageShow(it, film, dir, my){
   /* nova camada por cima; só entra depois de a imagem decodificar (a atual fica até lá) */
   const layers = $("#galLayers"), layer = document.createElement("span");
   layer.className = "gal-layer";
-  const ph = media(layer, it.thumb, s.name, s.tones, it.label, { quiet:true, w: film ? 0 : 1200, eager:true });
+  const ph = media(layer, it.thumb, s.name, s.tones, it.label, { quiet:true, w: film ? 0 : shownW.stage(), eager:true });
   if(film) ph.insertAdjacentHTML("beforeend", `<video muted loop playsinline autoplay preload="auto" src="${it.src}" aria-hidden="true"></video>`);
   const img = layer.querySelector("img");
   const ready = img && img.decode ? Promise.race([img.decode().catch(() => {}), wait(450)]) : Promise.resolve();
@@ -736,17 +775,24 @@ function galRemount(){
 const DECK_SLOTS = 4;                                        /* frente + 2 à vista + 1 escondida no fundo */
 const DECK_OFF_LEFT = "translate3d(-118%,4%,30px) rotate(-18deg)";   /* fora da tela, à esquerda */
 function deckBuild(){
-  const s = detailSuite, box = $("#galCards");
+  const box = $("#galCards");
   box.innerHTML = "";
-  gal.cards = galleryItems.map((it, k) => {
+  gal.cards = galleryItems.map((_, k) => {
     const c = document.createElement("div");
     c.className = "gal-card";
     c.dataset.slot = "x";
     c.innerHTML = `<span class="gal-card-in"><span class="gal-card-media"></span><small class="gal-card-num" aria-hidden="true">${pad2(k + 1)}</small></span>`;
-    media(c.querySelector(".gal-card-media"), it.thumb, s.name, s.tones, it.label, { quiet:true, w: it.type === "film" ? 0 : 1200, eager: k < 3 });
     box.appendChild(c);
     return c;
   });
+}
+/* A foto de cada carta só é pedida quando a carta entra no baralho (as três à vista, a escondida no fundo e a anterior,
+   que pode voltar pela esquerda). Antes as 12 fotos de uma suíte desciam de uma vez ao abrir a página no celular;
+   agora descem 5 e as outras conforme se passa. */
+function deckLoad(k){
+  const s = detailSuite, it = galleryItems[k], box = gal.cards[k].querySelector(".gal-card-media");
+  if(box.firstChild) return;
+  media(box, it.thumb, s.name, s.tones, it.label, { quiet:true, w: it.type === "film" ? 0 : shownW.deck(), eager:true });
 }
 /* posição de cada carta no baralho a partir da foto atual (0 = frente; "x" = escondida no fundo) */
 function deckPlace(){
@@ -755,6 +801,7 @@ function deckPlace(){
     const r = (k - gal.i + n) % n;
     c.dataset.slot = r < DECK_SLOTS ? r : "x";
     c.setAttribute("aria-hidden", String(r !== 0));
+    if(r < DECK_SLOTS || r === n - 1) deckLoad(k);
   });
   /* o filme só toca na frente */
   galleryItems.forEach((it, k) => {
@@ -1351,7 +1398,7 @@ function pageHTML(p, num){
     <div class="page-inner" data-fit>
       ${pageHead("Cardápio Cartier", "O prazer de comer bem")}
       <p class="pg-lead">Um cardápio bem diversificado, com pratos requintados da cozinha nacional e vinhos clássicos, entregues com discrição na sua suíte.</p>
-      <div class="pg-group"><h4>Bom saber</h4><ul class="pg-info">${menuInfo.map(t => `<li>${t}</li>`).join("")}</ul></div>
+      <div class="pg-group"><h4>Bom saber</h4><ul class="pg-info">${menuInfo.map(t => `<li>${keepPhone(t)}</li>`).join("")}</ul></div>
       ${pageFoot(num)}
     </div>`;
   if(p.type === "toc"){
@@ -1790,7 +1837,7 @@ function initFlipbook(){
   }));
   const plain = $("#menuListPlain"), toggle = $("#menuListToggle");
   plain.innerHTML = blocks.map(b => `<h3>${b.title}</h3>${b.sub ? `<p class="pg-sub">${b.sub}</p>` : ""}${b.html}`).join("")
-    + `<h3>Bom saber</h3><ul class="pg-info">${menuInfo.map(t => `<li>${t}</li>`).join("")}</ul>`;
+    + `<h3>Bom saber</h3><ul class="pg-info">${menuInfo.map(t => `<li>${keepPhone(t)}</li>`).join("")}</ul>`;
   toggle.addEventListener("click", () => {
     const open = plain.classList.toggle("visible");
     toggle.setAttribute("aria-expanded", String(open));
@@ -1936,11 +1983,18 @@ function initContactStatus(){
 /* ------------------------------------------------------------
    LOCALIZAÇÃO
 ------------------------------------------------------------ */
+/* O mapa incorporado do Google é o item mais pesado do site e só serve à página de Contato: o endereço dele
+   entra no <iframe> na primeira vez em que essa página abre (handleRoute), e não no carregamento de qualquer rota. */
+let mapSrc = "";
+function loadMap(){
+  const frame = $("#mapIframe");
+  if(mapSrc && !frame.getAttribute("src")) frame.src = mapSrc;
+}
 function initLocation(){
   const q = encodeURIComponent(`${motelConfig.name}, ${motelConfig.address}`);
   $("#mapsLink").href = `https://www.google.com/maps/search/?api=1&query=${q}`;
   $("#wazeLink").href = `https://waze.com/ul?q=${q}&navigate=yes`;
-  $("#mapIframe").src = `https://www.google.com/maps?q=${q}&output=embed`;
+  mapSrc = `https://www.google.com/maps?q=${q}&output=embed`;
   const btn = $("#copyAddress"), fb = $("#copyFeedback");
   btn.addEventListener("click", async () => {
     const text = `${motelConfig.name} — ${motelConfig.address}`;

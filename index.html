@@ -36,7 +36,7 @@
 <!-- Abertura: decide antes da 1ª pintura. Uma vez por sessão; não roda com rota na URL (#/suites…), página já rolada,
      aba em segundo plano, movimento reduzido ou ?fx=0. A sessão é gravada logo aqui, para um recarregamento não repetir. -->
 <script>(function(){try{var h=location.hash;if(sessionStorage.getItem("ct-intro")||(h&&h!=="#"&&h!=="#/")||window.scrollY>0||/[?&]fx=0\b/.test(location.search)||document.hidden||matchMedia("(prefers-reduced-motion: reduce)").matches)return;sessionStorage.setItem("ct-intro","1");document.documentElement.classList.add("intro-active")}catch(e){}})();</script>
-<noscript><style>.page{display:block}.intro{display:none}.reveal,.hero-enter{opacity:1;transform:none;animation:none}</style></noscript>
+<noscript><style>.page{display:block}.intro{display:none}.reveal,.hero-enter{opacity:1;transform:none;animation:none}body{background:#F5F7FD !important}.footer{visibility:visible !important}</style></noscript>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -447,7 +447,7 @@
       </div>
       <ul class="notes reveal reveal-d2">
         <li>Pernoite nas suítes <b>VIP, Super Luxo e Luxo</b>.</li>
-        <li>Promoção do mês: informe-se pelo telefone <b>(31) 9 9937-1118</b>.</li>
+        <li>Promoção do mês: informe-se pelo telefone <b>(31)&nbsp;9&nbsp;9937-1118</b>.</li>
         <li>Entrada permitida somente para maiores de 18 anos. Preços sujeitos a alteração sem aviso prévio.</li>
       </ul>
     </div>
@@ -534,7 +534,7 @@
       <div class="price-box">
         <h2>Valores</h2>
         <div class="price-rows" id="detailPrices"></div>
-        <p class="price-note">Valores por período, para qualquer suíte da categoria. Promoção do mês pelo telefone (31) 9 9937-1118.</p>
+        <p class="price-note">Valores por período, para qualquer suíte da categoria. Promoção do mês pelo telefone (31)&nbsp;9&nbsp;9937-1118.</p>
         <button class="btn btn-primary" id="detailAvailBtn">Consultar disponibilidade <span class="arrow">→</span></button>
       </div>
     </aside>
@@ -639,7 +639,7 @@
         <div class="book-chapters" id="bookChapters" role="group" aria-label="Ir para um capítulo do cardápio"></div>
         <button class="link-arrow book-alt-toggle" id="menuListToggle" aria-expanded="false" aria-controls="menuListPlain">Prefere ler como lista? Ver cardápio completo</button>
         <div class="menu-list-plain" id="menuListPlain"></div>
-        <p class="consult-hint">Valores no cardápio da suíte ou pelo telefone (31) 9 9937-1118. Pratos preparados na hora.</p>
+        <p class="consult-hint">Valores no cardápio da suíte ou pelo telefone (31)&nbsp;9&nbsp;9937-1118. Pratos preparados na hora.</p>
       </div>
     </div>
   </section>
@@ -882,7 +882,7 @@
       <div class="avail-summary" id="availSummary" aria-live="polite"></div>
       <div class="avail-offline" id="availOffline">
         <b>Reservas pelo telefone</b>
-        Ligue para (31) 9 9937-1118 para confirmar a disponibilidade — estamos abertos 24 horas.
+        Ligue para (31)&nbsp;9&nbsp;9937-1118 para confirmar a disponibilidade — estamos abertos 24 horas.
       </div>
       <div class="avail-actions" id="availActions">
         <a class="btn btn-primary" id="availWhatsBtn" href="#" target="_blank" rel="noopener noreferrer" hidden>Enviar pelo WhatsApp <span class="arrow">→</span></a>

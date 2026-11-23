@@ -13,7 +13,7 @@ assets/css/site.css     → sistema visual (inclui o roteiro da abertura)
 assets/js/data.js       → CONTEÚDO editável (dados do motel, categorias, suítes, preços, cardápio, dúvidas)
 assets/js/site.js       → lógica (navegação, livro do cardápio, galeria, disponibilidade) — não precisa mexer
 assets/img/             → favicon, ícones, logotipo em PNG e a imagem de compartilhamento (og-cartier.jpg)
-assets/media/<suíte>/   → fotos e filmes das suítes (vazias por enquanto; veja assets/media/LEIA-ME.md)
+assets/media/<suíte>/   → fotos das suítes (veja assets/media/LEIA-ME.md)
 assets/site.webmanifest → nome e ícones para "adicionar à tela inicial"
 robots.txt, sitemap.xml → para o Google
 wordpress/              → plugin "Cartier — Site", para publicar no WordPress
@@ -31,6 +31,10 @@ do motel (motelcartier.com.br, verificado em 19/10/2026). **Antes de publicar, c
 - o **número de suítes Luxo** (o site antigo lista os temas das outras categorias, mas não os das Luxo; por isso
   elas aparecem como uma entrada só) e se há **Instagram** ou e-mail para incluir.
 - o **CEP**, que o site antigo não informa (entra em `addressLines` e no JSON-LD do `<head>`).
+- a **Suíte 05**: as fotos mostram um tema de rock que o site antigo não lista. Ela entrou como "Rock", na
+  Super Luxo (as suítes 01 a 07 são dessa categoria e ela tem hidromassagem). Confirme o nome e a categoria.
+- a **Suíte de Motoqueiro**: entrou na categoria Luxo, com os preços da Luxo. Confirme a categoria e os valores.
+  As fotos da pasta "Suíte Padrão" ilustram a entrada "Luxo".
 
 O cardápio do site antigo não tem preços: os itens aparecem sem valor e o livro avisa
 "Valores no cardápio da suíte ou pelo telefone". Para mostrar um preço, acrescente `price: 25` no item.
@@ -92,8 +96,9 @@ Os nomes das páginas do site antigo também funcionam como âncora (`#estrutura
 - **Períodos** — `MB.periods` (2 horas, 3 horas, pernoite): são as colunas da tabela, dos cartões e da consulta.
 - **Categorias e preços** — `MB.categories`: nome, número de suítes (`count`, `null` quando não informado),
   frase, comodidades e `prices`. `null` num período mostra "—" (a Presidencial não tem pernoite no site antigo).
-- **Suítes** — `MB.suites`, com `mbSuite(número, id, nome, categoria, descrição, tons, legendas)`. O número fica
-  `null` enquanto o motel não informar (o site não mostra número). Os tons são os azuis do quadro sem foto.
+- **Suítes** — `MB.suites`, com `mbSuite(número, id, nome, categoria, descrição, tons, legendas, filme)`. O número
+  é o da suíte no motel (`"01"` a `"23"`, o mesmo das pastas de fotos); com `null` o site não mostra número.
+  Os tons são os azuis do quadro sem foto.
 - **Fotos** — veja `assets/media/LEIA-ME.md`. Sem foto, a suíte aparece com o quadro azul e "Fotos em breve".
 - **Destaques da Home** — `MB.featured` (ids das três suítes; a primeira ocupa o quadro maior).
 - **Estrutura** — `MB.experiences`: cada comodidade tem um desenho de linha animado escolhido por `icon`
